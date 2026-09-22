@@ -28,3 +28,22 @@ npm run dev
 
 ## ملاحظات الإنتاج
 مفاتيح Supabase publishable/anon مسموحة في الواجهة مع RLS. لا تضع Service Role Key في GitHub أو الواجهة.
+
+
+## مهم: دعوات البريد ومنع otp_expired
+لأن بعض Outlook/Microsoft security scanners قد تفتح روابط Supabase ذات الاستخدام الواحد قبل المستخدم، يستخدم ClinicPro صفحة وسيطة لا تستهلك TokenHash تلقائيًا. يجب تعديل Supabase Dashboard > Authentication > Email Templates > Invite user إلى:
+
+```html
+<h2>You're invited to ClinicPro Dental</h2>
+<p>لقد تمت دعوتك للانضمام إلى العيادة. افتح صفحة القبول ثم اضغط زر قبول الدعوة.</p>
+<p>
+  <a href="{{ .RedirectTo }}?invite=1&amp;token_hash={{ .TokenHash }}&amp;type=invite">
+    قبول الدعوة
+  </a>
+</p>
+```
+
+يجب أن يكون **Site URL** و **Redirect URLs** متضمنين:
+`https://baraamak.github.io/clinicpro-dental-online/`
+
+عند فتح البريد يصل المستخدم أولًا إلى صفحة ClinicPro، وعند ضغطه يدويًا على "قبول الدعوة" فقط يتم استدعاء `supabase.auth.verifyOtp({ token_hash, type: 'invite' })`.
