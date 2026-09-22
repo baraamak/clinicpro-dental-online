@@ -9,13 +9,27 @@ const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY',ma
 const fmt=d=>d?new Date(d).toLocaleString('ar-TR',{dateStyle:'medium',timeStyle:'short'}):'—'
 function toast(msg,type='ok'){window.dispatchEvent(new CustomEvent('toast',{detail:{msg,type}}))}
 function App(){
- const[session,setSession]=useState(null),[profile,setProfile]=useState(null),[clinic,setClinic]=useState(null),[member,setMember]=useState(null),[loading,setLoading]=useState(true),[tab,setTab]=useState('dashboard'),[data,setData]=useState({patients:[],appointments:[],treatments:[],invoices:[],payments:[],notifications:[],dental:[]}),[mobile,setMobile]=useState(false),[inviteMode,setInviteMode]=useState(()=>new URLSearchParams(window.location.hash.slice(1)).get('type')==='invite')
- useEffect(()=>{if(!supabase)return; supabase.auth.getSession().then(({data})=>setSession(data.session)).finally(()=>setLoading(false));const{data:s}=supabase.auth.onAuthStateChange((_,x)=>setSession(x));return()=>s.subscription.unsubscribe()},[])
+ const[session,setSession]=useState(null),[profile,setProfile]=useState(null),[clinic,setClinic]=useState(null),[member,setMember]=useState(null),[loading,setLoading]=useState(true),[tab,setTab]=useState('dashboard'),[data,setData]=useState({patients:[],appointments:[],treatments:[],invoices:[],payments:[],notifications:[],dental:[]}),[mobile,setMobile]=useState(false),[inviteMode,setInviteMode]=useState(()=>{const p=new URLSearchParams(window.location.hash.slice(1));return p.get('type')==='invite'})
+ useEffect(()=>{if(!supabase)return;
+  const hash=new URLSearchParams(window.location.hash.slice(1))
+  const invited=hash.get('type')==='invite'
+  if(invited)setInviteMode(true)
+  const finish=(s)=>{setSession(s);setLoading(false)}
+  supabase.auth.getSession().then(({data})=>finish(data.session)).catch(()=>setLoading(false))
+  const{data:s}=supabase.auth.onAuthStateChange((event,next)=>{
+    if(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='USER_UPDATED') setSession(next)
+    if(next) setLoading(false)
+  })
+  return()=>s.subscription.unsubscribe()
+},[])
  useEffect(()=>{if(session)load()},[session])
  async function load(){setLoading(true);const uid=session.user.id;const[{data:p},{data:m}]=await Promise.all([supabase.from('profiles').select('*').eq('id',uid).maybeSingle(),supabase.from('clinic_members').select('*, clinics(*)').eq('user_id',uid).eq('active',true).limit(1).maybeSingle()]);setProfile(p);setMember(m);setClinic(m?.clinics||null);if(m?.clinic_id){const id=m.clinic_id;const [pa,ap,tr,iv,py,no,dc]=await Promise.all([supabase.from('patients').select('*').eq('clinic_id',id).order('created_at',{ascending:false}),supabase.from('appointments').select('*,patients(full_name,phone)').eq('clinic_id',id).order('starts_at'),supabase.from('treatment_plans').select('*,patients(full_name)').eq('clinic_id',id).order('created_at',{ascending:false}),supabase.from('invoices').select('*,patients(full_name)').eq('clinic_id',id).order('issued_at',{ascending:false}),supabase.from('payments').select('*,patients(full_name),invoices(invoice_number)').eq('clinic_id',id).order('paid_at',{ascending:false}),supabase.from('notifications').select('*').eq('clinic_id',id).order('created_at',{ascending:false}).limit(30),supabase.from('dental_chart').select('*').eq('clinic_id',id)]);setData({patients:pa.data||[],appointments:ap.data||[],treatments:tr.data||[],invoices:iv.data||[],payments:py.data||[],notifications:no.data||[],dental:dc.data||[]})}setLoading(false)}
  if(loading)return <div className="splash"><div className="logo">🦷</div><h2>ClinicPro Dental</h2><span>جاري تجهيز النظام...</span></div>
+ if(inviteMode){
+   if(!session)return <div className="splash"><div className="logo">🦷</div><h2>ClinicPro Dental</h2><span>جاري فتح دعوة العيادة...</span></div>
+   return <SetInvitePassword onDone={()=>{window.history.replaceState(null,'',window.location.pathname+window.location.search);setInviteMode(false);load()}}/>
+ }
  if(!session)return <Auth/>
- if(inviteMode)return <SetInvitePassword onDone={()=>{window.history.replaceState(null,'',window.location.pathname+window.location.search);setInviteMode(false);load()}}/>
  if(!clinic)return <Onboarding session={session} onDone={load}/>
  const nav=[['dashboard','لوحة التحكم',LayoutDashboard],['patients','المرضى',Users],['appointments','المواعيد',Calendar],['treatments','خطط العلاج',Stethoscope],['finance','الفواتير',WalletCards],['dental','مخطط الأسنان',Activity],['notifications','التنبيهات',Bell],['settings','الإعدادات',SettingsIcon]]
  return <div className="app"><aside className={mobile?'sidebar open':'sidebar'}><div className="brand"><div>🦷</div><strong>ClinicPro</strong><button onClick={()=>setMobile(false)}><X/></button></div><div className="clinic"><b>{clinic.name}</b><small>{roles[member.role]}</small></div>{nav.map(([id,label,I])=><button className={tab===id?'nav active':'nav'} onClick={()=>{setTab(id);setMobile(false)}} key={id}><I size={19}/>{label}</button>)}<button className="nav logout" onClick={()=>supabase.auth.signOut()}><LogOut size={19}/>تسجيل الخروج</button></aside><main><header><button className="menu" onClick={()=>setMobile(true)}><Menu/></button><div><b>{clinic.name}</b><span>{roles[member.role]} · {profile?.full_name||session.user.email}</span></div><div className="head-actions"><Bell/><span className="dot"/></div></header><section className="content">{tab==='dashboard'&&<Dashboard data={data}/>} {tab==='patients'&&<Patients data={data} refresh={load} clinic={clinic}/>} {tab==='appointments'&&<Appointments data={data} refresh={load} clinic={clinic}/>} {tab==='treatments'&&<Treatments data={data} refresh={load} clinic={clinic}/>} {tab==='finance'&&<Finance data={data} refresh={load} clinic={clinic}/>} {tab==='dental'&&<Dental data={data} refresh={load} clinic={clinic}/>} {tab==='notifications'&&<Notifications data={data} refresh={load}/>} {tab==='settings'&&<Settings clinic={clinic} member={member} refresh={load}/>}</section></main><Toast/></div>
