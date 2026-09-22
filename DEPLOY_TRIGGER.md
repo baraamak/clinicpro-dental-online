@@ -1,2 +1,2 @@
-# Deployment check
-This file triggers the current GitHub Pages workflow after its Node/cache fix.
+# Deployment
+Invite acceptance now redirects to the production GitHub Pages URL and supports first-time password setup.
