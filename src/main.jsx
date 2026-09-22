@@ -22,7 +22,51 @@ function App(){
 function Auth(){const[mode,setMode]=useState('login'),[email,setEmail]=useState(''),[pass,setPass]=useState(''),[name,setName]=useState(''),[busy,setBusy]=useState(false);async function go(){setBusy(true);try{let r=mode==='login'?await supabase.auth.signInWithPassword({email,password:pass}):await supabase.auth.signUp({email,password:pass,options:{data:{full_name:name}}});if(r.error)throw r.error;if(mode==='signup'&&!r.data.session)toast('تم إنشاء الحساب. تحقق من بريدك الإلكتروني.')}catch(e){toast(e.message,'error')}finally{setBusy(false)}}return <div className="auth"><div className="auth-card"><div className="auth-logo">🦷</div><h1>ClinicPro Dental</h1><p>إدارة عيادتك الذكية من أي مكان</p>{mode==='signup'&&<input placeholder="الاسم الكامل" value={name} onChange={e=>setName(e.target.value)}/>}<input type="email" placeholder="البريد الإلكتروني" value={email} onChange={e=>setEmail(e.target.value)}/><input type="password" placeholder="كلمة المرور" value={pass} onChange={e=>setPass(e.target.value)}/><button className="primary full" onClick={go} disabled={busy}>{busy?'جاري المعالجة...':mode==='login'?'تسجيل الدخول':'إنشاء الحساب'}</button><button className="link" onClick={()=>setMode(mode==='login'?'signup':'login')}>{mode==='login'?'إنشاء حساب جديد':'لدي حساب بالفعل'}</button></div></div>}
 function Onboarding({session,onDone}){const[name,setName]=useState('');async function create(){if(!name)return;const{data:c,error}=await supabase.from('clinics').insert({name,owner_user_id:session.user.id}).select().single();if(error)return toast(error.message,'error');const{error:e}=await supabase.from('clinic_members').insert({clinic_id:c.id,user_id:session.user.id,role:'owner'});if(e)return toast(e.message,'error');toast('تم إنشاء العيادة');onDone()}return <div className="auth"><div className="auth-card"><div className="auth-logo">🦷</div><h1>أنشئ عيادتك الأولى</h1><p>سيصبح حسابك مالك العيادة ويمكنك دعوة الفريق لاحقًا.</p><input placeholder="اسم العيادة" value={name} onChange={e=>setName(e.target.value)}/><button className="primary full" onClick={create}>إنشاء العيادة</button></div></div>}
 function Head({title,sub,action}){return <div className="page-head"><div><h1>{title}</h1><p>{sub}</p></div>{action}</div>}
-function Dashboard({data}){const revenue=data.payments.reduce((s,x)=>s+Number(x.amount||0),0),due=data.invoices.reduce((s,x)=>s+Number(x.balance_due||0),0);return <><Head title="لوحة التحكم" sub="نظرة سريعة على أداء العيادة اليوم."/><div className="stats"><Stat icon={Users} label="المرضى" value={data.patients.length}/><Stat icon={Calendar} label="المواعيد" value={data.appointments.length}/><Stat icon={WalletCards} label="المحصل" value={money(revenue)}/><Stat icon={AlertTriangle} label="المتبقي" value={money(due)}/></div><div className="grid2"><section className="panel"><h3>المواعيد القادمة</h3>{data.appointments.slice(0,6).map(a=><div className="list-row" key={a.id}><div className="avatar">🦷</div><div><b>{a.patients?.full_name||'مريض'}</b><span>{a.title} · {fmt(a.starts_at)}</span></div><em>{a.status}</em></div>)}{!data.appointments.length&&<Empty/>}</section><section className="panel"><h3>آخر التنبيهات</h3>{data.notifications.slice(0,6).map(n=><div className="list-row" key={n.id}><div className="iconbox"><Bell size={17}/></div><div><b>{n.title}</b><span>{n.body}</span></div></div>)}{!data.notifications.length&&<Empty text="لا توجد تنبيهات"/></section></div></>}
+function Dashboard({data}){
+  const revenue=data.payments.reduce((s,x)=>s+Number(x.amount||0),0)
+  const due=data.invoices.reduce((s,x)=>s+Number(x.balance_due||0),0)
+  return (
+    <>
+      <Head title="لوحة التحكم" sub="نظرة سريعة على أداء العيادة اليوم."/>
+      <div className="stats">
+        <Stat icon={Users} label="المرضى" value={data.patients.length}/>
+        <Stat icon={Calendar} label="المواعيد" value={data.appointments.length}/>
+        <Stat icon={WalletCards} label="المحصل" value={money(revenue)}/>
+        <Stat icon={AlertTriangle} label="المتبقي" value={money(due)}/>
+      </div>
+      <div className="grid2">
+        <section className="panel">
+          <h3>المواعيد القادمة</h3>
+          {data.appointments.slice(0,6).map(a=>(
+            <div className="list-row" key={a.id}>
+              <div className="avatar">🦷</div>
+              <div>
+                <b>{a.patients?.full_name||"مريض"}</b>
+                <span>{a.title} · {fmt(a.starts_at)}</span>
+              </div>
+              <em>{a.status}</em>
+            </div>
+          ))}
+          {!data.appointments.length&&<Empty/>}
+        </section>
+        <section className="panel">
+          <h3>آخر التنبيهات</h3>
+          {data.notifications.slice(0,6).map(n=>(
+            <div className="list-row" key={n.id}>
+              <div className="iconbox"><Bell size={17}/></div>
+              <div>
+                <b>{n.title}</b>
+                <span>{n.body}</span>
+              </div>
+            </div>
+          ))}
+          {!data.notifications.length&&<Empty text="لا توجد تنبيهات"/>}
+        </section>
+      </div>
+    </>
+  )
+}
+
 function Stat({icon:I,label,value}){return <div className="stat"><div className="iconbox"><I size={20}/></div><span>{label}</span><strong>{value}</strong></div>}
 function Empty({text='لا توجد بيانات'}){return <div className="empty">{text}</div>}
 function Modal({title,children,onClose}){return <div className="modal-bg"><div className="modal"><div className="modal-head"><h3>{title}</h3><button onClick={onClose}><X/></button></div>{children}</div></div>}
