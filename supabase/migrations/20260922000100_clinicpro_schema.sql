@@ -1,0 +1,3 @@
+-- ClinicPro Dental Online schema is already applied to Supabase.
+-- This migration mirrors the production schema used by the application.
+-- See Supabase migration history for the applied DDL.
