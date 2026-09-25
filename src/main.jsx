@@ -9,15 +9,8 @@ const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY',ma
 const fmt=d=>d?new Date(d).toLocaleString('ar-TR',{dateStyle:'medium',timeStyle:'short'}):'—'
 function toast(msg,type='ok'){window.dispatchEvent(new CustomEvent('toast',{detail:{msg,type}}))}
 function App(){
- const search=new URLSearchParams(window.location.search)
- const inviteToken=search.get('token_hash')
- const inviteType=search.get('type')||'invite'
- const inviteMode=search.get('invite')==='1' && !!inviteToken
- const[session,setSession]=useState(null),[profile,setProfile]=useState(null),[clinic,setClinic]=useState(null),[member,setMember]=useState(null),[loading,setLoading]=useState(true),[tab,setTab]=useState('dashboard'),[data,setData]=useState({patients:[],appointments:[],treatments:[],invoices:[],payments:[],notifications:[],dental:[]}),[mobile,setMobile]=useState(false),[inviteMode,setInviteMode]=useState(()=>{const p=new URLSearchParams(window.location.hash.slice(1));return p.get('type')==='invite'})
+ const[session,setSession]=useState(null),[profile,setProfile]=useState(null),[clinic,setClinic]=useState(null),[member,setMember]=useState(null),[loading,setLoading]=useState(true),[tab,setTab]=useState('dashboard'),[data,setData]=useState({patients:[],appointments:[],treatments:[],invoices:[],payments:[],notifications:[],dental:[]}),[mobile,setMobile]=useState(false)
  useEffect(()=>{if(!supabase)return;
-  const hash=new URLSearchParams(window.location.hash.slice(1))
-  const invited=hash.get('type')==='invite'
-  if(invited)setInviteMode(true)
   const finish=(s)=>{setSession(s);setLoading(false)}
   supabase.auth.getSession().then(({data})=>finish(data.session)).catch(()=>setLoading(false))
   const{data:s}=supabase.auth.onAuthStateChange((event,next)=>{
