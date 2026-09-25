@@ -43,3 +43,5 @@
 .saved-tooth span{display:block;color:#5c7568;margin-top:3px}
 @media(max-width:1050px){.dental-layout{grid-template-columns:1fr}.dental-detail{position:static}}
 @media(max-width:700px){.tooth-list{grid-template-columns:1fr}.detail-fields{grid-template-columns:1fr}.detail-fields .full-field{grid-column:auto}.patient-select{width:100%;min-width:0}}
+
+.jaw-title{display:flex;align-items:center;justify-content:space-between}.jaw-title span{font-weight:500;opacity:.7;font-size:9px}.jaw-upper .jaw-title{background:#eef7fb;color:#205f82}.jaw-lower .jaw-title{background:#f5f0ea;color:#6f5135}.jaw-section+.jaw-section{margin-top:16px}
