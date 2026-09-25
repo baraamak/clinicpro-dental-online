@@ -2,3 +2,44 @@
 .invite-card small{display:block;color:#718096;margin-top:12px;line-height:1.6}.invite-error{background:#fff0f1;color:#b63b4a;border:1px solid #f3cbd0;padding:10px;border-radius:10px;margin:12px 0;font-size:12px}
 
 .team-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.team-head p{color:#718096;margin:5px 0 0;font-size:12px}.team-form{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:15px}.team-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#5c6d7e}.team-form input,.team-form select{border:1px solid #d9e1e8;border-radius:9px;padding:11px;outline:none;background:#fff;color:#172033}.team-actions{display:flex;gap:9px;justify-content:flex-start;margin-top:15px}.security-note{font-size:11px;color:#718096;margin:12px 0 0;line-height:1.7;background:#f5f8fb;border-radius:10px;padding:10px}.team-list{display:grid;gap:8px;margin-top:12px}.team-row{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #e6ebf1;border-radius:12px;background:#fbfcfd}.team-info{flex:1}.team-info strong,.team-info span{display:block}.team-info strong{font-size:12px}.team-info span{font-size:10px;color:#718096;margin-top:3px}.team-active,.team-off{font-size:10px;padding:5px 8px;border-radius:999px}.team-active{background:#e9f8f1;color:#247f5b}.team-off{background:#fdebed;color:#b74d5d}.small-btn{padding:7px 10px;font-size:10px}.member-avatar{width:34px;height:34px;border-radius:10px;background:#edf4f8;display:grid;place-items:center}.header-actions{display:flex;gap:8px}@media(max-width:700px){.team-form{grid-template-columns:1fr}.team-row{flex-wrap:wrap}.team-info{min-width:180px}.team-row .small-btn{margin-right:auto}}
+
+.patient-select{min-width:220px;border:1px solid #d9e1e8;border-radius:10px;padding:10px 12px;background:#fff;color:#172033}
+.dental-layout{display:grid;grid-template-columns:1.45fr .9fr;gap:18px;align-items:start}
+.dental-map-panel{min-width:0}
+.dental-map-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.dental-map-head h3{margin:0}
+.dental-map-head p{margin:5px 0 0;color:#718096;font-size:11px}
+.dental-help{background:#edf5fa;color:#1e5d83;padding:6px 9px;border-radius:8px;font-size:10px;font-weight:700}
+.jaw-sections{display:grid;gap:14px}
+.jaw-section{border:1px solid #e5eaf0;border-radius:14px;background:#fbfcfd;overflow:hidden}
+.jaw-title{padding:10px 12px;background:#f1f6f9;color:#35556e;font-weight:700;font-size:11px;border-bottom:1px solid #e5eaf0}
+.tooth-list{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px}
+.tooth-row{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;text-align:right;background:#fff;border:1px solid #e2e8ee;border-radius:10px;padding:9px 10px;color:#213246;min-width:0;transition:.16s}
+.tooth-row:hover{border-color:#7ba5bd;transform:translateY(-1px)}
+.tooth-row.selected{border-color:#1e6f95;box-shadow:0 0 0 2px #1e6f9520;background:#f4fbfe}
+.tooth-row.has-status{background:#fffaf2}
+.tooth-num{width:30px;height:30px;border-radius:8px;background:#edf4f8;color:#1e5d83;display:grid;place-items:center;font-weight:800;font-size:10px}
+.tooth-name{font-size:10px;font-weight:700;line-height:1.5}
+.tooth-status{font-size:8px;padding:4px 6px;border-radius:999px;white-space:nowrap;background:#edf2f5;color:#66798a}
+.tooth-status.caries,.tooth-status.root_canal{background:#fff0e1;color:#b36b19}
+.tooth-status.filled,.tooth-status.crown,.tooth-status.implant{background:#eaf4fb;color:#1f6790}
+.tooth-status.missing{background:#fdebed;color:#b74d5d}
+.dental-detail{position:sticky;top:96px}
+.dental-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid #edf1f5}
+.dental-detail-head>div:first-child span{color:#718096;font-size:10px}
+.dental-detail-head h2{font-size:18px;margin:5px 0}
+.dental-detail-head small{display:block;color:#718096;font-size:10px}
+.detail-status{padding:7px 9px;border-radius:9px;background:#e9f7ee;color:#257c58;font-size:10px;font-weight:800;white-space:nowrap}
+.detail-status.caries,.detail-status.root_canal{background:#fff0e1;color:#b36b19}
+.detail-status.filled,.detail-status.crown,.detail-status.implant{background:#eaf4fb;color:#1f6790}
+.detail-status.missing{background:#fdebed;color:#b74d5d}
+.detail-fields{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:15px}
+.detail-fields label{display:flex;flex-direction:column;gap:6px;color:#607184;font-size:10px}
+.detail-fields .full-field{grid-column:1/-1}
+.detail-fields input,.detail-fields select,.detail-fields textarea{border:1px solid #d9e1e8;border-radius:10px;padding:10px;outline:none;background:#fff;color:#172033}
+.detail-fields textarea{min-height:105px;resize:vertical;line-height:1.6}
+.dental-detail-actions{margin-top:14px}
+.saved-tooth{margin-top:13px;display:flex;gap:8px;align-items:flex-start;background:#eef8f2;color:#277a58;border:1px solid #d7eee1;border-radius:10px;padding:10px;font-size:9px}
+.saved-tooth span{display:block;color:#5c7568;margin-top:3px}
+@media(max-width:1050px){.dental-layout{grid-template-columns:1fr}.dental-detail{position:static}}
+@media(max-width:700px){.tooth-list{grid-template-columns:1fr}.detail-fields{grid-template-columns:1fr}.detail-fields .full-field{grid-column:auto}.patient-select{width:100%;min-width:0}}
