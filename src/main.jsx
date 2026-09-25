@@ -83,7 +83,84 @@ function Form({fields,set}){return <div className="form">{[['full_name','الا�
 function Appointments({data,refresh,clinic}){const[open,setOpen]=useState(false),[f,setF]=useState({patient_id:'',title:'موعد',starts_at:'',duration_min:30,notes:''});async function save(){const{data:u}=await supabase.auth.getUser();const{error}=await supabase.from('appointments').insert({...f,clinic_id:clinic.id,created_by:u.user.id});if(error)toast(error.message,'error');else{toast('تم حجز الموعد');setOpen(false);refresh()}}return <><Head title="المواعيد" sub="إدارة جدول العيادة وحالات المراجعين." action={<button className="primary" onClick={()=>setOpen(true)}><Plus/>موعد جديد</button>}/><section className="panel table"><table><thead><tr><th>المريض</th><th>الموعد</th><th>الخدمة</th><th>الحالة</th></tr></thead><tbody>{data.appointments.map(a=><tr key={a.id}><td>{a.patients?.full_name}</td><td>{fmt(a.starts_at)}</td><td>{a.title}</td><td><span className="badge">{a.status}</span></td></tr>)}</tbody></table></section>{open&&<Modal title="موعد جديد" onClose={()=>setOpen(false)}><div className="form"><label>المريض<select value={f.patient_id} onChange={e=>setF({...f,patient_id:e.target.value})}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>الخدمة<input value={f.title} onChange={e=>setF({...f,title:e.target.value})}/></label><label>التاريخ والوقت<input type="datetime-local" value={f.starts_at} onChange={e=>setF({...f,starts_at:e.target.value})}/></label><label>المدة بالدقائق<input type="number" value={f.duration_min} onChange={e=>setF({...f,duration_min:Number(e.target.value)})}/></label></div><div className="actions"><button className="ghost" onClick={()=>setOpen(false)}>إلغاء</button><button className="primary" onClick={save}>حفظ</button></div></Modal>}</>}
 function Treatments({data}){return <><Head title="خطط العلاج" sub="متابعة مراحل العلاج وتكلفته ونسبة الإنجاز."/><div className="cards">{data.treatments.map(t=><div className="treatment" key={t.id}><b>{t.name}</b><span>{t.patients?.full_name}</span><div className="progress"><i style={{width:t.progress+'%'}}/></div><small>{t.progress}% · {money(t.total_cost)}</small></div>)}{!data.treatments.length&&<Empty/>}</div></>}
 function Finance({data,clinic,refresh}){const[open,setOpen]=useState(false),[f,setF]=useState({patient_id:'',invoice_id:'',amount:0,payment_method:'cash',notes:''});async function save(){const{data:u}=await supabase.auth.getUser();const{error}=await supabase.from('payments').insert({...f,clinic_id:clinic.id,paid_by:u.user.id});if(error)toast(error.message,'error');else{toast('تم تسجيل الدفعة');setOpen(false);refresh()}}const total=data.invoices.reduce((s,x)=>s+Number(x.total||0),0),paid=data.payments.reduce((s,x)=>s+Number(x.amount||0),0);return <><Head title="الفواتير والمدفوعات" sub="متابعة الإيرادات والمتبقي." action={<button className="primary" onClick={()=>setOpen(true)}><Plus/>دفعة</button>}/><div className="finance"><Stat icon={FileText} label="الفواتير" value={money(total)}/><Stat icon={CheckCircle2} label="المحصل" value={money(paid)}/><Stat icon={AlertTriangle} label="المتبقي" value={money(total-paid)}/></div><section className="panel table"><table><thead><tr><th>المريض</th><th>الفاتورة</th><th>الإجمالي</th><th>المتبقي</th></tr></thead><tbody>{data.invoices.map(i=><tr key={i.id}><td>{i.patients?.full_name}</td><td>{i.invoice_number}</td><td>{money(i.total)}</td><td>{money(i.balance_due)}</td></tr>)}</tbody></table></section>{open&&<Modal title="تسجيل دفعة" onClose={()=>setOpen(false)}><div className="form"><label>المريض<select value={f.patient_id} onChange={e=>setF({...f,patient_id:e.target.value})}><option value="">اختر</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>الفاتورة<select value={f.invoice_id} onChange={e=>setF({...f,invoice_id:e.target.value})}><option value="">اختر</option>{data.invoices.filter(i=>!f.patient_id||i.patient_id===f.patient_id).map(i=><option key={i.id} value={i.id}>{i.invoice_number} — {money(i.balance_due)}</option>)}</select></label><label>المبلغ<input type="number" value={f.amount} onChange={e=>setF({...f,amount:Number(e.target.value)})}/></label><label>طريقة الدفع<select value={f.payment_method} onChange={e=>setF({...f,payment_method:e.target.value})}><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option></select></label></div><div className="actions"><button className="primary" onClick={save}>حفظ الدفعة</button></div></Modal>}</>}
-function Dental({data,refresh,clinic}){const[pid,setPid]=useState(''),[selected,setSelected]=useState(11);const row=data.dental.find(x=>x.patient_id===pid&&x.tooth_no===selected);async function setStatus(status){const{data:u}=await supabase.auth.getUser();const{error}=await supabase.from('dental_chart').upsert({clinic_id:clinic.id,patient_id:pid,tooth_no:selected,status,updated_by:u.user.id},{onConflict:'clinic_id,patient_id,tooth_no'});if(error)toast(error.message,'error');else{toast('تم تحديث السن');refresh()}}return <><Head title="مخطط الأسنان" sub="سجل حالة كل سن للمريض." action={<select value={pid} onChange={e=>setPid(e.target.value)}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}/><section className="panel dental"><div className="teeth">{[...Array(16)].map((_,i)=>18-i).concat([...Array(16)].map((_,i)=>21+i)).map(n=><button className={selected===n?'selected':''} onClick={()=>setSelected(n)} key={n}>🦷<small>{n}</small></button>)}</div><div className="dental-actions">{['healthy','caries','filled','crown','root_canal','missing','implant'].map(s=><button key={s} onClick={()=>setStatus(s)}>{s}</button>)}</div><p>الحالة الحالية: <b>{row?.status||'healthy'}</b></p></section></>}
+const toothCatalog=[
+ {no:18,name:'الضرس الثالث العلوي الأيمن (ضرس العقل)',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:17,name:'الضرس الثاني العلوي الأيمن',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:16,name:'الضرس الأول العلوي الأيمن',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:15,name:'الضاحك الثاني العلوي الأيمن',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:14,name:'الضاحك الأول العلوي الأيمن',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:13,name:'الناب العلوي الأيمن',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:12,name:'القاطع الجانبي العلوي الأيمن',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:11,name:'القاطع المركزي العلوي الأيمن',jaw:'الفك العلوي',side:'الأيمن'},
+ {no:21,name:'القاطع المركزي العلوي الأيسر',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:22,name:'القاطع الجانبي العلوي الأيسر',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:23,name:'الناب العلوي الأيسر',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:24,name:'الضاحك الأول العلوي الأيسر',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:25,name:'الضاحك الثاني العلوي الأيسر',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:26,name:'الضرس الأول العلوي الأيسر',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:27,name:'الضرس الثاني العلوي الأيسر',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:28,name:'الضرس الثالث العلوي الأيسر (ضرس العقل)',jaw:'الفك العلوي',side:'الأيسر'},
+ {no:48,name:'الضرس الثالث السفلي الأيمن (ضرس العقل)',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:47,name:'الضرس الثاني السفلي الأيمن',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:46,name:'الضرس الأول السفلي الأيمن',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:45,name:'الضاحك الثاني السفلي الأيمن',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:44,name:'الضاحك الأول السفلي الأيمن',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:43,name:'الناب السفلي الأيمن',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:42,name:'القاطع الجانبي السفلي الأيمن',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:41,name:'القاطع المركزي السفلي الأيمن',jaw:'الفك السفلي',side:'الأيمن'},
+ {no:31,name:'القاطع المركزي السفلي الأيسر',jaw:'الفك السفلي',side:'الأيسر'},
+ {no:32,name:'القاطع الجانبي السفلي الأيسر',jaw:'الفك السفلي',side:'الأيسر'},
+ {no:33,name:'الناب السفلي الأيسر',jaw:'الفك السفلي',side:'الأيسر'},
+ {no:34,name:'الضاحك الأول السفلي الأيسر',jaw:'الفك السفلي',side:'الأيسر'},
+ {no:35,name:'الضاحك الثاني السفلي الأيسر',jaw:'الفك السفلي',side:'الأيسر'},
+ {no:36,name:'الضرس الأول السفلي الأيسر',jaw:'الفك السفلي',side:'الأيسر'},
+ {no:37,name:'الضرس الثاني السفلي الأيسر',jaw:'الفك السفلي',side:'الأيسر'},
+ {no:38,name:'الضرس الثالث السفلي الأيسر (ضرس العقل)',jaw:'الفك السفلي',side:'الأيسر'}
+]
+const toothStatusLabels={healthy:'سليم',caries:'تسوس',filled:'حشوة',crown:'تاج',root_canal:'علاج عصب',missing:'مفقود',implant:'زرعة'}
+
+function Dental({data,refresh,clinic}){
+ const[pid,setPid]=useState(data.patients[0]?.id||''),[selected,setSelected]=useState(11),[status,setStatus]=useState('healthy'),[notes,setNotes]=useState(''),[treatment,setTreatment]=useState(''),[date,setDate]=useState('')
+ const currentPatient=data.patients.find(p=>p.id===pid)
+ const tooth=toothCatalog.find(t=>t.no===selected)||toothCatalog[7]
+ const row=data.dental.find(x=>x.patient_id===pid&&Number(x.tooth_no)===selected)
+ useEffect(()=>{setStatus(row?.status||'healthy');setNotes(row?.notes||'');setTreatment(row?.treatment_done||'');setDate(row?.treatment_date||'')},[pid,selected,row?.id])
+ async function saveTooth(){
+  if(!pid)return toast('اختر المريض أولاً','error')
+  const{data:u}=await supabase.auth.getUser()
+  const payload={clinic_id:clinic.id,patient_id:pid,tooth_no:selected,tooth_name:tooth.name,status,notes,treatment_done:treatment,treatment_date:date||null,updated_by:u.user.id}
+  const{error}=await supabase.from('dental_chart').upsert(payload,{onConflict:'clinic_id,patient_id,tooth_no'})
+  if(error)toast(error.message,'error');else{toast('تم حفظ تفاصيل السن بنجاح');refresh()}
+ }
+ const groups=[
+  {title:'الفك العلوي — الجهة اليمنى',items:toothCatalog.filter(t=>t.jaw==='الفك العلوي'&&t.side==='الأيمن')},
+  {title:'الفك العلوي — المنطقة الأمامية',items:toothCatalog.filter(t=>t.jaw==='الفك العلوي'&&t.no>=11&&t.no<=12||t.jaw==='الفك العلوي'&&t.no>=21&&t.no<=22)},
+  {title:'الفك العلوي — الجهة اليسرى',items:toothCatalog.filter(t=>t.jaw==='الفك العلوي'&&t.side==='الأيسر')},
+  {title:'الفك السفلي — الجهة اليمنى',items:toothCatalog.filter(t=>t.jaw==='الفك السفلي'&&t.side==='الأيمن')},
+  {title:'الفك السفلي — المنطقة الأمامية',items:toothCatalog.filter(t=>t.jaw==='الفك السفلي'&&t.no>=31&&t.no<=32||t.jaw==='الفك السفلي'&&t.no>=41&&t.no<=42)},
+  {title:'الفك السفلي — الجهة اليسرى',items:toothCatalog.filter(t=>t.jaw==='الفك السفلي'&&t.side==='الأيسر')}
+ ]
+ return <><Head title="مخطط الأسنان" sub="اختر المريض ثم اختر أي سن أو ضرس لعرض حالته وتفاصيل ما تم علاجه." action={<select className="patient-select" value={pid} onChange={e=>setPid(e.target.value)}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}/>
+ <div className="dental-layout">
+  <section className="panel dental-map-panel">
+   <div className="dental-map-head"><div><h3>{currentPatient?currentPatient.full_name:'مخطط الأسنان'}</h3><p>اضغط على اسم السن لعرض حالته وتعديل سجله.</p></div><span className="dental-help">FDI</span></div>
+   <div className="jaw-sections">
+    {groups.map(g=><div className="jaw-section" key={g.title}><div className="jaw-title">{g.title}</div><div className="tooth-list">{g.items.map(t=>{const r=data.dental.find(x=>x.patient_id===pid&&Number(x.tooth_no)===t.no);return <button key={t.no} className={'tooth-row '+(selected===t.no?'selected ':'')+(r&&r.status!=='healthy'?'has-status':'')} onClick={()=>setSelected(t.no)}><span className="tooth-num">{t.no}</span><span className="tooth-name">{t.name}</span><span className={'tooth-status '+(r?.status||'healthy')}>{toothStatusLabels[r?.status||'healthy']}</span></button>})}</div></div>)}
+   </div>
+  </section>
+  <section className="panel dental-detail">
+   <div className="dental-detail-head"><div><span>السن المحدد</span><h2>{tooth.name}</h2><small>رقم FDI: {tooth.no} · {tooth.jaw}</small></div><div className={'detail-status '+status}>{toothStatusLabels[status]}</div></div>
+   <div className="detail-fields">
+    <label>حالة السن<select value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(toothStatusLabels).map(([k,v])=><option value={k} key={k}>{v}</option>)}</select></label>
+    <label>تاريخ آخر إجراء<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+    <label className="full-field">ما الذي تم إصلاحه أو إجراؤه<textarea value={treatment} onChange={e=>setTreatment(e.target.value)} placeholder="مثال: تنظيف، حشوة ضوئية، علاج عصب، تاج، خلع..."/></label>
+    <label className="full-field">ملاحظات الطبيب<textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="مثال: ألم عند المضغ، حساسية للبارد، يحتاج متابعة..."/></label>
+   </div>
+   <div className="dental-detail-actions"><button className="primary" onClick={saveTooth}>حفظ تفاصيل السن</button></div>
+   {row&&<div className="saved-tooth"><CheckCircle2 size={17}/><div><b>آخر سجل محفوظ</b><span>{row.treatment_done||'لا يوجد إجراء مسجل'} {row.updated_at?' · '+fmt(row.updated_at):''}</span></div></div>}
+  </section>
+ </div></>
+}
 function Notifications({data,refresh}){async function read(id){await supabase.from('notifications').update({read_at:new Date().toISOString()}).eq('id',id);refresh()}return <><Head title="التنبيهات" sub="المواعيد والمدفوعات ورسائل النظام."/><section className="panel">{data.notifications.map(n=><div className={n.read_at?'notice read':'notice'} onClick={()=>read(n.id)} key={n.id}><Bell/><div><b>{n.title}</b><span>{n.body}</span><small>{fmt(n.created_at)}</small></div></div>)}{!data.notifications.length&&<Empty text="لا توجد تنبيهات"/>}</section></>}
 function Settings({clinic,member,refresh}){
  const[email,setEmail]=useState(''),[fullName,setFullName]=useState(''),[password,setPassword]=useState(''),[role,setRole]=useState('receptionist'),[editing,setEditing]=useState(null),[employees,setEmployees]=useState([]),[busy,setBusy]=useState(false),[name,setName]=useState(clinic.name)
