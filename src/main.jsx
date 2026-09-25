@@ -145,7 +145,90 @@ function SessionAttachments({appointment,clinic,onClose}){
    <div className="session-files-list">{loading?<Empty text="جاري تحميل الملفات..."/>:files.length?files.map(file=><div className="session-file-row" key={file.id}><div className="file-type"><FileText size={17}/></div><div className="file-meta"><b>{file.file_name}</b><span>{categories[file.category]} · {formatSize(file.size_bytes)} · {fmt(file.created_at)}</span>{file.notes&&<small>{file.notes}</small>}</div><button className="file-action" onClick={()=>openFile(file)} title="فتح الملف"><Download size={16}/></button><button className="file-action danger" onClick={()=>removeFile(file)} title="حذف الملف"><Trash2 size={15}/></button></div>):<Empty text="لا توجد ملفات مرفقة بهذه الجلسة"/>}</div>
  </Modal>
 }
-function Treatments({data}){return <><Head title="خطط العلاج" sub="متابعة مراحل العلاج وتكلفته ونسبة الإنجاز."/><div className="cards">{data.treatments.map(t=><div className="treatment" key={t.id}><b>{t.name}</b><span>{t.patients?.full_name}</span><div className="progress"><i style={{width:t.progress+'%'}}/></div><small>{t.progress}% · {money(t.total_cost)}</small></div>)}{!data.treatments.length&&<Empty/>}</div></>}
+function Treatments({data,refresh,clinic}){
+ const[open,setOpen]=useState(false),[detail,setDetail]=useState(null)
+ const[form,setForm]=useState({patient_id:'',name:'',total_cost:0,progress:0,status:'planned',notes:''})
+ const[newPatient,setNewPatient]=useState(false)
+ const[patientForm,setPatientForm]=useState({full_name:'',phone:'',date_of_birth:'',gender:'',allergies:'',medical_history:'',notes:''})
+
+ function reset(){setForm({patient_id:'',name:'',total_cost:0,progress:0,status:'planned',notes:''});setNewPatient(false);setPatientForm({full_name:'',phone:'',date_of_birth:'',gender:'',allergies:'',medical_history:'',notes:''})}
+
+ async function createPatient(){
+  const{data:u}=await supabase.auth.getUser()
+  const{data:p,error}=await supabase.from('patients').insert({...patientForm,clinic_id:clinic.id,created_by:u.user.id}).select().single()
+  if(error){toast(error.message,'error');return null}
+  return p
+ }
+
+ async function savePlan(){
+  const{data:u}=await supabase.auth.getUser()
+  let patientId=form.patient_id
+  if(newPatient){
+   const p=await createPatient()
+   if(!p)return
+   patientId=p.id
+  }
+  if(!patientId)return toast('اختر المريض أو أضف مريضًا جديدًا','error')
+  if(!form.name.trim())return toast('أدخل اسم خطة العلاج','error')
+  const{error}=await supabase.from('treatment_plans').insert({...form,patient_id:patientId,clinic_id:clinic.id,created_by:u.user.id,total_cost:Number(form.total_cost||0),progress:Number(form.progress||0)})
+  if(error)toast(error.message,'error');else{toast('تم إنشاء خطة العلاج');setOpen(false);reset();refresh()}
+ }
+
+ return <><Head title="خطط العلاج" sub="ملف العلاج الكامل للمريض: الخطة، الجلسات، الملفات، ملاحظات الطبيب وملخص الأسنان." action={<button className="primary" onClick={()=>{reset();setOpen(true)}}><Plus/>إضافة خطة علاج</button>}/>
+ <div className="treatment-summary-grid"><Stat icon={Stethoscope} label="خطط العلاج" value={data.treatments.length}/><Stat icon={Users} label="المرضى ضمن الخطط" value={new Set(data.treatments.map(x=>x.patient_id)).size}/><Stat icon={Activity} label="أسنان لها سجلات" value={data.dental.filter(x=>x.status&&x.status!=='healthy').length}/></div>
+ <div className="treatment-plan-cards">{data.treatments.map(t=><button className="treatment-plan-card" key={t.id} onClick={()=>setDetail(t)}>
+   <div className="plan-card-top"><div><b>{t.name}</b><span>{t.patients?.full_name}</span></div><span className={'plan-status '+t.status}>{t.status==='planned'?'مخططة':t.status==='in_progress'?'قيد العلاج':t.status==='completed'?'مكتملة':'ملغاة'}</span></div>
+   <div className="progress"><i style={{width:t.progress+'%'}}/></div>
+   <div className="plan-card-bottom"><small>{t.progress}% إنجاز</small><small>{money(t.total_cost)}</small></div>
+   <div className="plan-card-note">{t.notes||'لا توجد ملاحظات عامة للخطة'}</div>
+   <div className="plan-card-summary">{t.clinical_summary?'ملخص الأسنان: '+t.clinical_summary.split('\n').slice(0,2).join(' · '):'لا يوجد ملخص أسنان مسجل بعد'}</div>
+ </button>)}{!data.treatments.length&&<div className="panel"><Empty text="لا توجد خطط علاج بعد — ابدأ بإضافة أول خطة للمريض"/></div>}</div>
+ {open&&<Modal title="إضافة خطة علاج للمريض" onClose={()=>setOpen(false)}>
+   <div className="plan-create-switch"><button className={!newPatient?'active':''} onClick={()=>setNewPatient(false)}>اختيار مريض موجود</button><button className={newPatient?'active':''} onClick={()=>setNewPatient(true)}>إضافة مريض جديد</button></div>
+   {!newPatient?<div className="form"><label>المريض<select value={form.patient_id} onChange={e=>setForm({...form,patient_id:e.target.value})}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name} · {p.phone||'بدون هاتف'}</option>)}</select></label></div>:
+   <div className="form"><label>الاسم الكامل<input value={patientForm.full_name} onChange={e=>setPatientForm({...patientForm,full_name:e.target.value})}/></label><label>الهاتف<input value={patientForm.phone} onChange={e=>setPatientForm({...patientForm,phone:e.target.value})}/></label><label>تاريخ الميلاد<input type="date" value={patientForm.date_of_birth} onChange={e=>setPatientForm({...patientForm,date_of_birth:e.target.value})}/></label><label>الجنس<input value={patientForm.gender} onChange={e=>setPatientForm({...patientForm,gender:e.target.value})}/></label><label>الحساسية<input value={patientForm.allergies} onChange={e=>setPatientForm({...patientForm,allergies:e.target.value})}/></label><label>التاريخ الطبي<input value={patientForm.medical_history} onChange={e=>setPatientForm({...patientForm,medical_history:e.target.value})}/></label></div>}
+   <div className="form"><label>اسم خطة العلاج<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="مثال: علاج شامل للفك العلوي"/></label><label>التكلفة الإجمالية<input type="number" value={form.total_cost} onChange={e=>setForm({...form,total_cost:e.target.value})}/></label><label>نسبة الإنجاز<input type="number" min="0" max="100" value={form.progress} onChange={e=>setForm({...form,progress:e.target.value})}/></label><label>الحالة<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="planned">مخططة</option><option value="in_progress">قيد العلاج</option><option value="completed">مكتملة</option><option value="cancelled">ملغاة</option></select></label><label className="full-field">ملاحظات خطة العلاج<input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></label></div>
+   <div className="actions"><button className="ghost" onClick={()=>setOpen(false)}>إلغاء</button><button className="primary" onClick={savePlan}>حفظ خطة العلاج</button></div>
+ </Modal>}
+ {detail&&<TreatmentPlanDetails plan={detail} data={data} clinic={clinic} refresh={refresh} onClose={()=>setDetail(null)}/>}
+ </>}
+}
+
+function TreatmentPlanDetails({plan,data,clinic,refresh,onClose}){
+ const[sessions,setSessions]=useState([]),[loading,setLoading]=useState(true),[sessionOpen,setSessionOpen]=useState(false),[fileSession,setFileSession]=useState(null)
+ const[notes,setNotes]=useState(plan.notes||'')
+ const[sessionForm,setSessionForm]=useState({title:'جلسة علاج',starts_at:'',duration_min:30,notes:''})
+ const patient=data.patients.find(p=>p.id===plan.patient_id)
+
+ async function loadSessions(){
+  setLoading(true)
+  const{data:s,error}=await supabase.from('appointments').select('*,patients(full_name,phone)').eq('clinic_id',clinic.id).eq('treatment_plan_id',plan.id).order('starts_at',{ascending:false})
+  if(error)toast(error.message,'error');else setSessions(s||[])
+  setLoading(false)
+ }
+ useEffect(()=>{loadSessions()},[plan.id])
+ async function saveNotes(){
+  const{error}=await supabase.from('treatment_plans').update({notes}).eq('id',plan.id)
+  if(error)toast(error.message,'error');else{toast('تم حفظ ملاحظات الخطة');refresh()}
+ }
+ async function addSession(){
+  const{data:u}=await supabase.auth.getUser()
+  if(!sessionForm.starts_at)return toast('أدخل تاريخ ووقت الجلسة','error')
+  const{error}=await supabase.from('appointments').insert({...sessionForm,clinic_id:clinic.id,patient_id:plan.patient_id,treatment_plan_id:plan.id,created_by:u.user.id})
+  if(error)toast(error.message,'error');else{toast('تمت إضافة الجلسة إلى خطة العلاج');setSessionOpen(false);setSessionForm({title:'جلسة علاج',starts_at:'',duration_min:30,notes:''});loadSessions();refresh()}
+ }
+ const toothRows=data.dental.filter(x=>x.patient_id===plan.patient_id&&x.status&&x.status!=='healthy')
+ return <Modal title={'ملف خطة العلاج — '+(patient?.full_name||'المريض')} onClose={onClose}>
+  <div className="plan-profile-head"><div><strong>{patient?.full_name}</strong><span>{patient?.phone||'بدون هاتف'}{patient?.date_of_birth?' · '+patient.date_of_birth:''}</span></div><div className="plan-profile-badge">خطة علاج</div></div>
+  <div className="clinical-summary-box"><div className="summary-title"><Activity size={16}/> ملخص ما تم العمل عليه من مخطط الأسنان</div>{toothRows.length?<div className="tooth-summary-list">{toothRows.map(t=><div key={t.id||t.tooth_no} className="tooth-summary-row"><b>{t.tooth_name||'السن '+t.tooth_no}</b><span>{toothStatusLabels[t.status]||t.status}{t.treatment_done?' · '+t.treatment_done:''}{t.notes?' · '+t.notes:''}</span></div>)}</div>:<Empty text="لا توجد سجلات علاجية غير سليمة في مخطط الأسنان لهذا المريض"/>}</div>
+  <div className="plan-notes-box"><div className="summary-title"><FileText size={16}/> ملاحظات خطة العلاج</div><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="ملاحظات عامة عن خطة العلاج والمتابعة..." /><button className="primary compact-btn" onClick={saveNotes}>حفظ الملاحظات</button></div>
+  <div className="sessions-box"><div className="sessions-head"><div><h3>جلسات هذه الخطة</h3><p>كل جلسة تحتوي ملفاتها وصورها وتقاريرها الخاصة.</p></div><button className="primary compact-btn" onClick={()=>setSessionOpen(true)}><Plus/> جلسة</button></div>
+   {loading?<Empty text="جاري تحميل الجلسات..."/>:sessions.length?sessions.map(s=><div className="therapy-session-row" key={s.id}><div className="session-date"><b>{new Date(s.starts_at).toLocaleDateString('ar-TR')}</b><span>{new Date(s.starts_at).toLocaleTimeString('ar-TR',{hour:'2-digit',minute:'2-digit'})}</span></div><div className="session-main"><strong>{s.title}</strong><span>{s.notes||'لا توجد ملاحظات للجلسة'}</span></div><button className="session-files-btn" onClick={()=>setFileSession(s)}><Paperclip size={14}/> الملفات</button></div>):<Empty text="لا توجد جلسات مرتبطة بهذه الخطة"/>}
+  </div>
+  {sessionOpen&&<Modal title="إضافة جلسة إلى خطة العلاج" onClose={()=>setSessionOpen(false)}><div className="form"><label>نوع الجلسة<input value={sessionForm.title} onChange={e=>setSessionForm({...sessionForm,title:e.target.value})}/></label><label>التاريخ والوقت<input type="datetime-local" value={sessionForm.starts_at} onChange={e=>setSessionForm({...sessionForm,starts_at:e.target.value})}/></label><label>المدة بالدقائق<input type="number" min="5" value={sessionForm.duration_min} onChange={e=>setSessionForm({...sessionForm,duration_min:Number(e.target.value)})}/></label><label className="full-field">ملاحظات الجلسة<input value={sessionForm.notes} onChange={e=>setSessionForm({...sessionForm,notes:e.target.value})}/></label></div><div className="actions"><button className="ghost" onClick={()=>setSessionOpen(false)}>إلغاء</button><button className="primary" onClick={addSession}>حفظ الجلسة</button></div></Modal>}
+  {fileSession&&<SessionAttachments appointment={{...fileSession,patients:{full_name:patient?.full_name},patient_id:plan.patient_id}} clinic={clinic} onClose={()=>setFileSession(null)}/>}
+ </Modal>
+}
 function Finance({data,clinic,refresh}){const[open,setOpen]=useState(false),[f,setF]=useState({patient_id:'',invoice_id:'',amount:0,payment_method:'cash',notes:''});async function save(){const{data:u}=await supabase.auth.getUser();const{error}=await supabase.from('payments').insert({...f,clinic_id:clinic.id,paid_by:u.user.id});if(error)toast(error.message,'error');else{toast('تم تسجيل الدفعة');setOpen(false);refresh()}}const total=data.invoices.reduce((s,x)=>s+Number(x.total||0),0),paid=data.payments.reduce((s,x)=>s+Number(x.amount||0),0);return <><Head title="الفواتير والمدفوعات" sub="متابعة الإيرادات والمتبقي." action={<button className="primary" onClick={()=>setOpen(true)}><Plus/>دفعة</button>}/><div className="finance"><Stat icon={FileText} label="الفواتير" value={money(total)}/><Stat icon={CheckCircle2} label="المحصل" value={money(paid)}/><Stat icon={AlertTriangle} label="المتبقي" value={money(total-paid)}/></div><section className="panel table"><table><thead><tr><th>المريض</th><th>الفاتورة</th><th>الإجمالي</th><th>المتبقي</th></tr></thead><tbody>{data.invoices.map(i=><tr key={i.id}><td>{i.patients?.full_name}</td><td>{i.invoice_number}</td><td>{money(i.total)}</td><td>{money(i.balance_due)}</td></tr>)}</tbody></table></section>{open&&<Modal title="تسجيل دفعة" onClose={()=>setOpen(false)}><div className="form"><label>المريض<select value={f.patient_id} onChange={e=>setF({...f,patient_id:e.target.value})}><option value="">اختر</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>الفاتورة<select value={f.invoice_id} onChange={e=>setF({...f,invoice_id:e.target.value})}><option value="">اختر</option>{data.invoices.filter(i=>!f.patient_id||i.patient_id===f.patient_id).map(i=><option key={i.id} value={i.id}>{i.invoice_number} — {money(i.balance_due)}</option>)}</select></label><label>المبلغ<input type="number" value={f.amount} onChange={e=>setF({...f,amount:Number(e.target.value)})}/></label><label>طريقة الدفع<select value={f.payment_method} onChange={e=>setF({...f,payment_method:e.target.value})}><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option></select></label></div><div className="actions"><button className="primary" onClick={save}>حفظ الدفعة</button></div></Modal>}</>}
 const toothCatalog=[
  {no:18,name:'الضرس الثالث العلوي الأيمن (ضرس العقل)',jaw:'الفك العلوي',side:'الأيمن'},
