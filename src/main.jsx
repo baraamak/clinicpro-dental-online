@@ -191,7 +191,7 @@ function Treatments({data,refresh,clinic}){
    <div className="actions"><button className="ghost" onClick={()=>setOpen(false)}>إلغاء</button><button className="primary" onClick={savePlan}>حفظ خطة العلاج</button></div>
  </Modal>}
  {detail&&<TreatmentPlanDetails plan={detail} data={data} clinic={clinic} refresh={refresh} onClose={()=>setDetail(null)}/>}
- </>}
+ </>
 }
 
 function TreatmentPlanDetails({plan,data,clinic,refresh,onClose}){
