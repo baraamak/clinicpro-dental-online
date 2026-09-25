@@ -71,3 +71,24 @@
 .file-action{width:30px;height:30px;border:1px solid #dfe7ed;background:#fff;border-radius:8px;color:#1e5d83;display:grid;place-items:center}
 .file-action.danger{color:#b84e5c}
 @media(max-width:700px){.upload-controls{grid-template-columns:1fr}.session-file-row{align-items:flex-start}.file-action{flex:0 0 auto}}
+
+.treatment-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.treatment-plan-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.treatment-plan-card{display:block;text-align:right;background:#fff;border:1px solid #e4ebf0;border-radius:16px;padding:17px;color:#172033;box-shadow:0 8px 25px #173d5c0a;transition:.16s}
+.treatment-plan-card:hover{border-color:#78a7bf;transform:translateY(-1px)}
+.plan-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.plan-card-top b,.plan-card-top span{display:block}
+.plan-card-top b{font-size:14px}
+.plan-card-top>div>span{font-size:11px;color:#718096;margin-top:5px}
+.plan-status{font-size:9px;padding:5px 7px;border-radius:999px;background:#eef3f6;color:#637789;white-space:nowrap}
+.plan-status.in_progress{background:#eaf5fb;color:#1e668d}.plan-status.completed{background:#e9f8f0;color:#287b59}.plan-status.cancelled{background:#fdecee;color:#ad4f5c}
+.plan-card-bottom{display:flex;justify-content:space-between;color:#718096;font-size:10px}.plan-card-note,.plan-card-summary{font-size:10px;line-height:1.6;margin-top:9px;padding-top:9px;border-top:1px solid #edf1f5}.plan-card-summary{color:#46667c}
+.plan-create-switch{display:flex;gap:7px;background:#f2f6f8;padding:5px;border-radius:11px;margin-bottom:15px}.plan-create-switch button{flex:1;background:transparent;padding:9px;border-radius:8px;color:#607184;font-size:11px}.plan-create-switch button.active{background:#fff;box-shadow:0 3px 10px #173d5c12;color:#1e5d83;font-weight:700}
+.full-field{grid-column:1/-1!important}.compact-btn{padding:8px 11px;font-size:10px}
+.plan-profile-head{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f7fafb;border:1px solid #e4ebf0;border-radius:12px;padding:12px;margin-bottom:12px}.plan-profile-head strong,.plan-profile-head span{display:block}.plan-profile-head strong{font-size:14px}.plan-profile-head span{font-size:10px;color:#718096;margin-top:4px}.plan-profile-badge{font-size:9px;background:#eaf4fa;color:#1e5d83;padding:6px 8px;border-radius:8px}
+.clinical-summary-box,.plan-notes-box,.sessions-box{border:1px solid #e3eaf0;border-radius:13px;padding:13px;margin-bottom:13px;background:#fff}.summary-title{display:flex;align-items:center;gap:7px;color:#1e5d83;font-size:11px;font-weight:800;margin-bottom:10px}.tooth-summary-list{display:grid;gap:7px;max-height:210px;overflow:auto}.tooth-summary-row{display:flex;gap:8px;align-items:flex-start;background:#f7fafb;border-radius:9px;padding:8px}.tooth-summary-row b{min-width:180px;font-size:9px}.tooth-summary-row span{font-size:9px;color:#607184;line-height:1.6}
+.plan-notes-box textarea{width:100%;min-height:85px;border:1px solid #d9e1e8;border-radius:9px;padding:9px;resize:vertical;outline:none}.plan-notes-box .compact-btn{margin-top:8px}
+.sessions-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.sessions-head h3{margin:0;font-size:13px}.sessions-head p{margin:4px 0 0;color:#718096;font-size:9px}
+.therapy-session-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #edf1f5}.therapy-session-row:last-child{border-bottom:0}.session-date{width:74px;text-align:center;background:#eef5f8;border-radius:9px;padding:7px}.session-date b,.session-date span{display:block}.session-date b{font-size:10px}.session-date span{font-size:9px;color:#718096;margin-top:3px}.session-main{flex:1;min-width:0}.session-main strong,.session-main span{display:block}.session-main strong{font-size:10px}.session-main span{font-size:9px;color:#718096;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:900px){.treatment-plan-cards{grid-template-columns:1fr}.treatment-summary-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.treatment-summary-grid{grid-template-columns:1fr}.plan-profile-head,.sessions-head{align-items:flex-start}.therapy-session-row{flex-wrap:wrap}.session-main{min-width:180px}.tooth-summary-row{flex-direction:column}.tooth-summary-row b{min-width:0}}
