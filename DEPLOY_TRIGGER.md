@@ -1,2 +1,2 @@
-# Deployment
-Invite acceptance now redirects to the production GitHub Pages URL and supports first-time password setup.
+# Blank page fix
+Removed obsolete invitation UI/components and fixed the runtime ReferenceError.
