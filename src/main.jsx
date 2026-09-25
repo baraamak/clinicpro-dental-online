@@ -132,20 +132,16 @@ function Dental({data,refresh,clinic}){
   const{error}=await supabase.from('dental_chart').upsert(payload,{onConflict:'clinic_id,patient_id,tooth_no'})
   if(error)toast(error.message,'error');else{toast('تم حفظ تفاصيل السن بنجاح');refresh()}
  }
- const groups=[
-  {title:'الفك العلوي — الجهة اليمنى',items:toothCatalog.filter(t=>t.jaw==='الفك العلوي'&&t.side==='الأيمن')},
-  {title:'الفك العلوي — المنطقة الأمامية',items:toothCatalog.filter(t=>t.jaw==='الفك العلوي'&&t.no>=11&&t.no<=12||t.jaw==='الفك العلوي'&&t.no>=21&&t.no<=22)},
-  {title:'الفك العلوي — الجهة اليسرى',items:toothCatalog.filter(t=>t.jaw==='الفك العلوي'&&t.side==='الأيسر')},
-  {title:'الفك السفلي — الجهة اليمنى',items:toothCatalog.filter(t=>t.jaw==='الفك السفلي'&&t.side==='الأيمن')},
-  {title:'الفك السفلي — المنطقة الأمامية',items:toothCatalog.filter(t=>t.jaw==='الفك السفلي'&&t.no>=31&&t.no<=32||t.jaw==='الفك السفلي'&&t.no>=41&&t.no<=42)},
-  {title:'الفك السفلي — الجهة اليسرى',items:toothCatalog.filter(t=>t.jaw==='الفك السفلي'&&t.side==='الأيسر')}
- ]
+ const upperTeeth=toothCatalog.filter(t=>t.jaw==='الفك العلوي')
+ const lowerTeeth=toothCatalog.filter(t=>t.jaw==='الفك السفلي')
+ const renderTooth=(t)=>{const r=data.dental.find(x=>x.patient_id===pid&&Number(x.tooth_no)===t.no);return <button key={t.no} className={'tooth-row '+(selected===t.no?'selected ':'')+(r&&r.status!=='healthy'?'has-status':'')} onClick={()=>setSelected(t.no)}><span className="tooth-num">{t.no}</span><span className="tooth-name">{t.name}</span><span className={'tooth-status '+(r?.status||'healthy')}>{toothStatusLabels[r?.status||'healthy']}</span></button>}
  return <><Head title="مخطط الأسنان" sub="اختر المريض ثم اختر أي سن أو ضرس لعرض حالته وتفاصيل ما تم علاجه." action={<select className="patient-select" value={pid} onChange={e=>setPid(e.target.value)}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}/>
  <div className="dental-layout">
   <section className="panel dental-map-panel">
    <div className="dental-map-head"><div><h3>{currentPatient?currentPatient.full_name:'مخطط الأسنان'}</h3><p>اضغط على اسم السن لعرض حالته وتعديل سجله.</p></div><span className="dental-help">FDI</span></div>
    <div className="jaw-sections">
-    {groups.map(g=><div className="jaw-section" key={g.title}><div className="jaw-title">{g.title}</div><div className="tooth-list">{g.items.map(t=>{const r=data.dental.find(x=>x.patient_id===pid&&Number(x.tooth_no)===t.no);return <button key={t.no} className={'tooth-row '+(selected===t.no?'selected ':'')+(r&&r.status!=='healthy'?'has-status':'')} onClick={()=>setSelected(t.no)}><span className="tooth-num">{t.no}</span><span className="tooth-name">{t.name}</span><span className={'tooth-status '+(r?.status||'healthy')}>{toothStatusLabels[r?.status||'healthy']}</span></button>})}</div></div>)}
+    <div className="jaw-section jaw-upper"><div className="jaw-title">🦷 الفك العلوي <span>16 سنًا</span></div><div className="tooth-list">{upperTeeth.map(renderTooth)}</div></div>
+    <div className="jaw-section jaw-lower"><div className="jaw-title">🦷 الفك السفلي <span>16 سنًا</span></div><div className="tooth-list">{lowerTeeth.map(renderTooth)}</div></div>
    </div>
   </section>
   <section className="panel dental-detail">
