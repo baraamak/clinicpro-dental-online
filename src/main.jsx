@@ -95,7 +95,6 @@ function Appointments({data,refresh,clinic}){
  {open&&<Modal title="جلسة جديدة" onClose={()=>setOpen(false)}><div className="form"><label>المريض<select value={f.patient_id} onChange={e=>setF({...f,patient_id:e.target.value})}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>نوع الجلسة<input value={f.title} onChange={e=>setF({...f,title:e.target.value})}/></label><label>التاريخ والوقت<input type="datetime-local" value={f.starts_at} onChange={e=>setF({...f,starts_at:e.target.value})}/></label><label>المدة بالدقائق<input type="number" min="5" value={f.duration_min} onChange={e=>setF({...f,duration_min:Number(e.target.value)})}/></label></div><div className="actions"><button className="ghost" onClick={()=>setOpen(false)}>إلغاء</button><button className="primary" onClick={save}>حفظ الجلسة</button></div></Modal>}
  {attachmentsOpen&&selectedAppointment&&<SessionAttachments appointment={selectedAppointment} clinic={clinic} onClose={()=>{setAttachmentsOpen(false);setSelectedAppointment(null)}}/>}
  </>}
-}
 
 function SessionAttachments({appointment,clinic,onClose}){
  const[files,setFiles]=useState([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[category,setCategory]=useState('dental_image'),[note,setNote]=useState('')
