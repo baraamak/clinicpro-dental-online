@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState} from 'react'
 import{createRoot}from'react-dom/client'
-import{Calendar,Users,WalletCards,Bell,Settings as SettingsIcon,LogOut,Plus,Search,Stethoscope,LayoutDashboard,FileText,Menu,X,CheckCircle2,AlertTriangle,Activity}from'lucide-react'
+import{Calendar,Users,WalletCards,Bell,Settings as SettingsIcon,LogOut,Plus,Search,Stethoscope,LayoutDashboard,FileText,Menu,X,CheckCircle2,AlertTriangle,Activity,Paperclip,Download,Trash2}from'lucide-react'
 import{supabase}from'./supabase'
 import'./styles.css'
 
@@ -80,7 +80,72 @@ function Empty({text='لا توجد بيانات'}){return <div className="empty
 function Modal({title,children,onClose}){return <div className="modal-bg"><div className="modal"><div className="modal-head"><h3>{title}</h3><button onClick={onClose}><X/></button></div>{children}</div></div>}
 function Patients({data,refresh,clinic}){const[open,setOpen]=useState(false),[q,setQ]=useState(''),[form,setForm]=useState({full_name:'',phone:'',email:'',date_of_birth:'',gender:'',allergies:'',medical_history:'',notes:''});const rows=data.patients.filter(p=>(p.full_name+p.phone).toLowerCase().includes(q.toLowerCase()));async function save(){const{data:u}=await supabase.auth.getUser();const{error}=await supabase.from('patients').insert({...form,clinic_id:clinic.id,created_by:u.user.id});if(error)toast(error.message,'error');else{toast('تمت إضافة المريض');setOpen(false);refresh()}}return <><Head title="المرضى" sub="ملفات المرضى والسجل الطبي." action={<button className="primary" onClick={()=>setOpen(true)}><Plus/>مريض جديد</button>}/><div className="toolbar"><Search/><input placeholder="بحث بالاسم أو الهاتف..." value={q} onChange={e=>setQ(e.target.value)}/></div><section className="panel table"><table><thead><tr><th>المريض</th><th>الهاتف</th><th>الميلاد</th><th>الجنس</th><th>الحساسية</th></tr></thead><tbody>{rows.map(p=><tr key={p.id}><td><b>{p.full_name}</b></td><td>{p.phone||'—'}</td><td>{p.date_of_birth||'—'}</td><td>{p.gender||'—'}</td><td>{p.allergies||'لا يوجد'}</td></tr>)}</tbody></table>{!rows.length&&<Empty/>}</section>{open&&<Modal title="إضافة مريض" onClose={()=>setOpen(false)}><Form fields={form} set={setForm}/><div className="actions"><button className="ghost" onClick={()=>setOpen(false)}>إلغاء</button><button className="primary" onClick={save}>حفظ المريض</button></div></Modal>}</>}
 function Form({fields,set}){return <div className="form">{[['full_name','الاسم الكامل'],['phone','الهاتف'],['email','البريد الإلكتروني'],['date_of_birth','تاريخ الميلاد'],['gender','الجنس'],['allergies','الحساسية'],['medical_history','التاريخ الطبي'],['notes','ملاحظات']].map(([k,l])=><label key={k}>{l}<input value={fields[k]} onChange={e=>set({...fields,[k]:e.target.value})}/></label>)}</div>}
-function Appointments({data,refresh,clinic}){const[open,setOpen]=useState(false),[f,setF]=useState({patient_id:'',title:'موعد',starts_at:'',duration_min:30,notes:''});async function save(){const{data:u}=await supabase.auth.getUser();const{error}=await supabase.from('appointments').insert({...f,clinic_id:clinic.id,created_by:u.user.id});if(error)toast(error.message,'error');else{toast('تم حجز الموعد');setOpen(false);refresh()}}return <><Head title="المواعيد" sub="إدارة جدول العيادة وحالات المراجعين." action={<button className="primary" onClick={()=>setOpen(true)}><Plus/>موعد جديد</button>}/><section className="panel table"><table><thead><tr><th>المريض</th><th>الموعد</th><th>الخدمة</th><th>الحالة</th></tr></thead><tbody>{data.appointments.map(a=><tr key={a.id}><td>{a.patients?.full_name}</td><td>{fmt(a.starts_at)}</td><td>{a.title}</td><td><span className="badge">{a.status}</span></td></tr>)}</tbody></table></section>{open&&<Modal title="موعد جديد" onClose={()=>setOpen(false)}><div className="form"><label>المريض<select value={f.patient_id} onChange={e=>setF({...f,patient_id:e.target.value})}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>الخدمة<input value={f.title} onChange={e=>setF({...f,title:e.target.value})}/></label><label>التاريخ والوقت<input type="datetime-local" value={f.starts_at} onChange={e=>setF({...f,starts_at:e.target.value})}/></label><label>المدة بالدقائق<input type="number" value={f.duration_min} onChange={e=>setF({...f,duration_min:Number(e.target.value)})}/></label></div><div className="actions"><button className="ghost" onClick={()=>setOpen(false)}>إلغاء</button><button className="primary" onClick={save}>حفظ</button></div></Modal>}</>}
+function Appointments({data,refresh,clinic}){
+ const[open,setOpen]=useState(false),[attachmentsOpen,setAttachmentsOpen]=useState(false),[selectedAppointment,setSelectedAppointment]=useState(null)
+ const[f,setF]=useState({patient_id:'',title:'جلسة علاج',starts_at:'',duration_min:30,notes:''})
+ async function save(){
+  const{data:u}=await supabase.auth.getUser()
+  const{error}=await supabase.from('appointments').insert({...f,clinic_id:clinic.id,created_by:u.user.id})
+  if(error)toast(error.message,'error');else{toast('تم حجز الجلسة');setOpen(false);refresh()}
+ }
+ function openAttachments(a){setSelectedAppointment(a);setAttachmentsOpen(true)}
+ return <><Head title="المواعيد والجلسات" sub="إدارة جدول العيادة وإرفاق صور وأشعة وملفات كل جلسة." action={<button className="primary" onClick={()=>setOpen(true)}><Plus/>جلسة جديدة</button>}/>
+ <section className="panel table"><table><thead><tr><th>المريض</th><th>الجلسة</th><th>التاريخ والوقت</th><th>الحالة</th><th>ملفات الجلسة</th></tr></thead>
+ <tbody>{data.appointments.map(a=><tr key={a.id}><td><b>{a.patients?.full_name}</b></td><td>{a.title}</td><td>{fmt(a.starts_at)}</td><td><span className="badge">{a.status}</span></td><td><button className="session-files-btn" onClick={()=>openAttachments(a)}><Paperclip size={14}/> ملفات الجلسة</button></td></tr>)}</tbody></table>{!data.appointments.length&&<Empty text="لا توجد جلسات بعد"/>}</section>
+ {open&&<Modal title="جلسة جديدة" onClose={()=>setOpen(false)}><div className="form"><label>المريض<select value={f.patient_id} onChange={e=>setF({...f,patient_id:e.target.value})}><option value="">اختر المريض</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>نوع الجلسة<input value={f.title} onChange={e=>setF({...f,title:e.target.value})}/></label><label>التاريخ والوقت<input type="datetime-local" value={f.starts_at} onChange={e=>setF({...f,starts_at:e.target.value})}/></label><label>المدة بالدقائق<input type="number" min="5" value={f.duration_min} onChange={e=>setF({...f,duration_min:Number(e.target.value)})}/></label></div><div className="actions"><button className="ghost" onClick={()=>setOpen(false)}>إلغاء</button><button className="primary" onClick={save}>حفظ الجلسة</button></div></Modal>}
+ {attachmentsOpen&&selectedAppointment&&<SessionAttachments appointment={selectedAppointment} clinic={clinic} onClose={()=>{setAttachmentsOpen(false);setSelectedAppointment(null)}}/>}
+ </>}
+}
+
+function SessionAttachments({appointment,clinic,onClose}){
+ const[files,setFiles]=useState([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[category,setCategory]=useState('dental_image'),[note,setNote]=useState('')
+ const categories={dental_image:'صورة أسنان',xray:'أشعة X-Ray',cbct:'صورة مقطعية / CBCT',document:'ملف / تقرير',other:'أخرى'}
+ async function load(){
+  setLoading(true)
+  const{data,error}=await supabase.from('appointment_attachments').select('*').eq('appointment_id',appointment.id).order('created_at',{ascending:false})
+  if(error)toast(error.message,'error');else setFiles(data||[])
+  setLoading(false)
+ }
+ useEffect(()=>{load()},[appointment.id])
+ function ext(name){const x=name.split('.').pop();return x&&x!==name?x.toLowerCase():'bin'}
+ function formatSize(bytes){if(!bytes)return '—';if(bytes<1024*1024)return Math.round(bytes/1024)+' KB';return (bytes/1024/1024).toFixed(1)+' MB'}
+ async function upload(ev){
+  const file=ev.target.files?.[0];ev.target.value=''
+  if(!file)return
+  if(file.size>250*1024*1024){toast('حجم الملف يتجاوز 250 MB','error');return}
+  setBusy(true)
+  try{
+   const extension=ext(file.name)
+   const path=`${clinic.id}/${appointment.patients?.id||appointment.patient_id}/${appointment.id}/${crypto.randomUUID()}.${extension}`
+   const{data:u}=await supabase.auth.getUser()
+   const{error:storageError}=await supabase.storage.from('clinic-sessions').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false})
+   if(storageError)throw storageError
+   const{error:dbError}=await supabase.from('appointment_attachments').insert({clinic_id:clinic.id,appointment_id:appointment.id,patient_id:appointment.patient_id,file_name:file.name,storage_path:path,mime_type:file.type||'application/octet-stream',size_bytes:file.size,category,notes:note,uploaded_by:u.user.id})
+   if(dbError){await supabase.storage.from('clinic-sessions').remove([path]);throw dbError}
+   toast('تم رفع الملف وحفظه ضمن هذه الجلسة');setNote('');await load()
+  }catch(e){toast(e.message||'تعذر رفع الملف','error')}
+  finally{setBusy(false)}
+ }
+ async function openFile(file){
+  const{data,error}=await supabase.storage.from('clinic-sessions').createSignedUrl(file.storage_path,300)
+  if(error)toast(error.message,'error');else window.open(data.signedUrl,'_blank','noopener,noreferrer')
+ }
+ async function removeFile(file){
+  if(!confirm(`حذف الملف «${file.file_name}»؟`))return
+  const{error:storageError}=await supabase.storage.from('clinic-sessions').remove([file.storage_path])
+  if(storageError){toast(storageError.message,'error');return}
+  const{error}=await supabase.from('appointment_attachments').delete().eq('id',file.id)
+  if(error)toast(error.message,'error');else{toast('تم حذف الملف');load()}
+ }
+ return <Modal title={`ملفات جلسة ${appointment.patients?.full_name||'المريض'}`} onClose={onClose}>
+   <div className="session-file-head"><div><strong>{appointment.title}</strong><span>{fmt(appointment.starts_at)}</span></div><span className="session-file-private">ملفات خاصة وآمنة</span></div>
+   <div className="upload-box">
+    <div className="upload-main"><Paperclip size={22}/><div><b>إضافة ملف أو صورة للجلسة</b><small>JPG · PNG · WEBP · PDF · DICOM · ZIP حتى 250 MB</small></div></div>
+    <div className="upload-controls"><select value={category} onChange={e=>setCategory(e.target.value)}>{Object.entries(categories).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><input placeholder="ملاحظة اختيارية" value={note} onChange={e=>setNote(e.target.value)}/><label className="upload-button">{busy?'جاري الرفع...':'اختيار ملف'}<input type="file" onChange={upload} disabled={busy} accept="image/jpeg,image/png,image/webp,image/tiff,application/pdf,application/dicom,application/zip,.dcm,.zip"/></label></div>
+   </div>
+   <div className="session-files-list">{loading?<Empty text="جاري تحميل الملفات..."/>:files.length?files.map(file=><div className="session-file-row" key={file.id}><div className="file-type"><FileText size={17}/></div><div className="file-meta"><b>{file.file_name}</b><span>{categories[file.category]} · {formatSize(file.size_bytes)} · {fmt(file.created_at)}</span>{file.notes&&<small>{file.notes}</small>}</div><button className="file-action" onClick={()=>openFile(file)} title="فتح الملف"><Download size={16}/></button><button className="file-action danger" onClick={()=>removeFile(file)} title="حذف الملف"><Trash2 size={15}/></button></div>):<Empty text="لا توجد ملفات مرفقة بهذه الجلسة"/>}</div>
+ </Modal>
+}
 function Treatments({data}){return <><Head title="خطط العلاج" sub="متابعة مراحل العلاج وتكلفته ونسبة الإنجاز."/><div className="cards">{data.treatments.map(t=><div className="treatment" key={t.id}><b>{t.name}</b><span>{t.patients?.full_name}</span><div className="progress"><i style={{width:t.progress+'%'}}/></div><small>{t.progress}% · {money(t.total_cost)}</small></div>)}{!data.treatments.length&&<Empty/>}</div></>}
 function Finance({data,clinic,refresh}){const[open,setOpen]=useState(false),[f,setF]=useState({patient_id:'',invoice_id:'',amount:0,payment_method:'cash',notes:''});async function save(){const{data:u}=await supabase.auth.getUser();const{error}=await supabase.from('payments').insert({...f,clinic_id:clinic.id,paid_by:u.user.id});if(error)toast(error.message,'error');else{toast('تم تسجيل الدفعة');setOpen(false);refresh()}}const total=data.invoices.reduce((s,x)=>s+Number(x.total||0),0),paid=data.payments.reduce((s,x)=>s+Number(x.amount||0),0);return <><Head title="الفواتير والمدفوعات" sub="متابعة الإيرادات والمتبقي." action={<button className="primary" onClick={()=>setOpen(true)}><Plus/>دفعة</button>}/><div className="finance"><Stat icon={FileText} label="الفواتير" value={money(total)}/><Stat icon={CheckCircle2} label="المحصل" value={money(paid)}/><Stat icon={AlertTriangle} label="المتبقي" value={money(total-paid)}/></div><section className="panel table"><table><thead><tr><th>المريض</th><th>الفاتورة</th><th>الإجمالي</th><th>المتبقي</th></tr></thead><tbody>{data.invoices.map(i=><tr key={i.id}><td>{i.patients?.full_name}</td><td>{i.invoice_number}</td><td>{money(i.total)}</td><td>{money(i.balance_due)}</td></tr>)}</tbody></table></section>{open&&<Modal title="تسجيل دفعة" onClose={()=>setOpen(false)}><div className="form"><label>المريض<select value={f.patient_id} onChange={e=>setF({...f,patient_id:e.target.value})}><option value="">اختر</option>{data.patients.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>الفاتورة<select value={f.invoice_id} onChange={e=>setF({...f,invoice_id:e.target.value})}><option value="">اختر</option>{data.invoices.filter(i=>!f.patient_id||i.patient_id===f.patient_id).map(i=><option key={i.id} value={i.id}>{i.invoice_number} — {money(i.balance_due)}</option>)}</select></label><label>المبلغ<input type="number" value={f.amount} onChange={e=>setF({...f,amount:Number(e.target.value)})}/></label><label>طريقة الدفع<select value={f.payment_method} onChange={e=>setF({...f,payment_method:e.target.value})}><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option></select></label></div><div className="actions"><button className="primary" onClick={save}>حفظ الدفعة</button></div></Modal>}</>}
 const toothCatalog=[
